@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script src='scripts/axios.min.js'></script>
+  <script src='scripts/index.global.min.js'></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
+  <!-- <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script> -->
+  <script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth'
+      });
+      calendar.render();
+    });
+
+    // let API_location = "localhost:7000";
+    let API_location = "https://localhost:7188";
+    // let API_location = "https://eventsapi.onrender.com";
+    document.addEventListener("DOMContentLoaded", function () {
+        // let t=axios.get(`${API_location}/Events`);
+      //   .then(() => {
+      // alert(t);
+      // alert('gh');  });
+
+      axios.get(`${API_location}/api/Events`).then((res) => {
+        var calendarEl = document.getElementById("calendar");
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: "dayGridMonth",
+          events: res.data,
+        });
+        calendar.render();
+      });
+  });
+  </script>
+  <title>לוח שנה</title>
+</head>
+
+<body>
+  <div id='calendar'></div>
+  <div id="warp" style="display:flex;position:relative;">
+    <div id="in_warp" style="width:50%;">
+      <button onclick="addEvent()">Add Event</button>
+      <input type="text" class="add title" value="הכנס כותרת" />
+      <input type="date" class="add date" value="2023-09-06" />
+      <div style="height: 10px; display: block;"></div>
+
+      <button onclick="deleteEvent()">Delete Event</button>
+      <input type="number" class="delete id" placeholder="choose id" style="visibility:hidden;position:absolute;" />
+      <button onclick="deleteEventID()" class="delete id" style="visibility:hidden;position:absolute;">OK</button>
+      <div style="height: 10px; display: block;"></div>
+
+      <button onclick="updateEvent()">Update Event</button>
+      <input type="number" class="update id" placeholder="choose id" style="visibility:hidden;position:absolute;" />
+      <button onclick="updateEventID()" class="update" style="visibility:hidden;position:absolute;">OK</button>
+      <div class="update2 source" style="visibility:hidden;position:absolute;"></div>
+      <input type="text" class="update2 new title" style="visibility:hidden;position:absolute;" placeholder="כותרת" />
+      <input type="date" class="update2 new date" style="visibility:hidden;position:absolute;" />
+      <button onclick="updateEventFinal()" class="update2 ok" style="visibility:hidden;position:absolute;">OK</button>
+    </div>
+    <ul id="list" style="width:50%;"></ul>
+  </div>
+  <script>
+    let id;
+    let title;
+    let date;
+
+    function getEvents() {
+      axios.get(`${API_location}/api/Events`).then(res => {
+        console.log(res.data);
+        let list = document.querySelector('#list');
+        list.innerHTML = "";
+        res.data.forEach(element => {
+          let li = document.createElement('li');
+          li.innerHTML = `id: ${element.id}, title: "${element.title}", date: ${element.start}`;
+          list.append(li);
+        });
+      });
+    }
+
+    function addEvent() {
+      axios.post(`${API_location}/api/Events`, {
+        "title": document.querySelector(`.add.title`).value,
+        "start": document.querySelector(`.add.date`).value
+      }).then(res => {
+        console.log(res.data);
+        location.reload();
+      });
+    }
+
+    function deleteEvent() {
+      getEvents();
+      document.querySelectorAll('.delete.id').forEach(e => e.style = "visibility:visible;position:relative;");
+    }
+    function deleteEventID() {
+      let id = document.querySelector('input.delete.id').value;
+      axios.delete(`${API_location}/api/Events/${id}`).then(e => {
+        location.reload().then(() => getEvents());
+        console.log(e);
+        document.querySelectorAll('.delete.id').forEach(e => e.style = "visibility:hidden;position:absolute;");
+      });
+    }
+
+    function updateEvent() {
+      getEvents();
+      document.querySelectorAll('.update').forEach(e => e.style = "visibility:visible;position:relative;");
+    }
+    function updateEventID() {
+      id = document.querySelector('input.update.id').value;
+      document.querySelector('button.update').style = "visibility:hidden;position:absolute;";
+      document.querySelectorAll('.update2').forEach(e => e.style = "visibility:visible;position:relative;");
+      let source = document.querySelector('.update2.source');
+      axios.get(`${API_location}/api/Events`).then(res => {
+        // location.reload();
+        res.data.forEach(e => {
+          if (e.id == id) {
+            title = e.title;
+            date = e.start;
+          }
+        });
+        source.innerHTML = `id: ${id}, title: "${title}", date: ${date}`;
+      });
+
+    }
+    function updateEventFinal() {
+      let title_value = document.querySelector(`.update2.title`).value;
+      let date_value = document.querySelector(`.update2.date`).value;
+      if (title_value == "") title_value = title;
+      if (date_value == null) date_value = date;
+      axios.put(`${API_location}/api/Events/${id}`, {
+        "title": title_value,
+        "start": date_value
+      }).then(res => {
+        location.reload();
+        console.log(res)
+        getEvents();
+        document.querySelectorAll('.update').forEach(e => e.style = "visibility:hidden;position:absolute;");
+        document.querySelectorAll('.update2').forEach(e => e.style = "visibility:hidden;position:absolute;");
+      });
+    }
+  </script>
+</body>
+
+</html>
+<!-- 
+//https://axios-http.com/docs/intro
+//https://fullcalendar.io/demos
+//https://fullcalendar.io/docs/initialize-globals
+//https://eventsapi.onrender.com/api
+//https://eventsapi.onrender.com/swagger/index.html
+//file:///C:/Users/hitmachut/Desktop/%D7%93%D7%95%D7%98%D7%A0%D7%98/intel.html
